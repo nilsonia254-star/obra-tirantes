@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f141a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tirantes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Cortina Atirantada – Controle de Tirantes</title>
+<style>
+  :root{
+    --bg:#0f141a; --panel:#161d26; --panel2:#1d2631; --line:#2a3542; --txt:#e6edf3; --mut:#8b9aab;
+    --acc:#f39c12; --ok:#2ECC71; --err:#e74c3c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  header{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .brand{display:flex;flex-direction:column;min-width:260px}
+  .brand b{font-size:16px}
+  .brand input{background:transparent;border:none;border-bottom:1px dashed var(--line);color:var(--mut);font:inherit;font-size:12px;padding:2px 0;width:100%}
+  .savebox{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  #btnSave{background:#2ECC71;border-color:#2ECC71;color:#0b1a10;font-weight:700;padding:9px 16px;font-size:13px}
+  #btnSave.dirty{background:var(--acc);border-color:var(--acc);color:#111;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #f39c1288}50%{box-shadow:0 0 0 6px #f39c1200}}
+  #saveInfo{font-size:11px;color:var(--mut)}
+  main{padding:14px 16px;max-width:1500px;margin:0 auto}
+  section{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  h2{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .kpi .l{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .kpi .s{color:var(--mut);font-size:11px}
+  .bar{height:7px;background:#0b1016;border-radius:4px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;border-radius:4px}
+  button{background:#26323f;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 11px;font:inherit;cursor:pointer}
+  button:hover{background:#2f3e4e}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#111;font-weight:700}
+  button.danger{border-color:#e74c3c88;color:#ff8a7d}
+  input,select,textarea{background:#0b1016;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 7px;font:inherit}
+  input[type=date]{color-scheme:dark;padding:4px 5px}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+  .row label{display:flex;flex-direction:column;gap:3px;color:var(--mut);font-size:11px}
+  .msg{min-height:16px;font-size:12px;margin-top:6px}.msg.ok{color:var(--ok)}.msg.err{color:var(--err)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin-bottom:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block;flex:none}
+  #mapa{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px}
+  .chip{border-radius:6px;padding:6px 4px;text-align:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;color:#0b1016;line-height:1.15}
+  .chip small{display:block;font-weight:500;font-size:10px;opacity:.8}
+  .chip.warn{border-color:#ff5c5c}
+  .chip:hover{filter:brightness(1.15)}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:1100px}
+  th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:middle}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:var(--panel2)}
+  td.n{font-weight:700;font-variant-numeric:tabular-nums;width:46px}
+  td input[type=text]{width:100%}
+  tr.hl td{background:#f39c1222}
+  .st{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;color:#0b1016;white-space:nowrap}
+  .alerta{color:#ff8a7d;font-size:11px;display:block;margin-top:2px}
+  #tipos input{width:76px}
+  #tipos td,#tipos th{white-space:nowrap}
+  .ztools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
+  .ztools button{min-width:38px;font-weight:700}
+  .ztools button.on{background:var(--acc);border-color:var(--acc);color:#111}
+  #zVal{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
+  #elevWrap{overflow:auto;max-height:78vh;border:1px solid var(--line);border-radius:8px;background:#0c1117;cursor:grab;padding:8px}
+  #elevWrap.drag{cursor:grabbing;user-select:none}
+  #desenhoSec:fullscreen{overflow:auto;padding:16px;background:var(--bg)}
+  #desenhoSec:fullscreen #elevWrap{max-height:calc(100vh - 150px)}
+  #elevs{display:flex;flex-wrap:nowrap;gap:10px;align-items:flex-start;width:max-content}
+  .elev{background:#121820;border:1px solid var(--line);border-radius:8px;padding:6px 8px 4px;flex:none}
+  .elev h3{margin:0 0 2px;font-size:12px;color:var(--txt);display:flex;justify-content:space-between;gap:8px}
+  .elev h3 span{color:var(--mut);font-weight:400}
+  .elev svg{display:block}
+  .tir{cursor:pointer}
+  .tir:hover circle.c{stroke:#fff;stroke-width:.9}
+  #dtip{position:fixed;pointer-events:none;background:#000e;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;display:none;z-index:50;white-space:nowrap}
+  @media print{ .elev{background:#fff} }
+  #log{max-height:160px;overflow:auto;font-size:11px;color:var(--mut);margin:0;padding-left:18px}
+  #elevWrap{touch-action:none}
+  /* painel do tirante selecionado (bom no celular) */
+  #selSec .selhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  #selSec .selhead b{font-size:19px;flex:1;text-align:center}
+  .stg{display:grid;grid-template-columns:14px 1fr 150px 56px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .stg i{width:14px;height:14px;border-radius:4px;display:block}
+  .stg span{font-weight:600}
+  .stg input{width:100%}
+  .hdrbtns{display:flex;gap:6px;flex-wrap:wrap}
+  @media (max-width:700px){
+    header{position:static;padding:10px;gap:8px} .brand{min-width:0;flex-basis:100%} .brand b{font-size:15px}
+    .savebox{margin-left:0;flex:1;align-items:stretch} #btnSave{width:100%;padding:12px}
+    .hdrbtns{flex-basis:100%} .hdrbtns button{flex:1;padding:11px 6px}
+    main{padding:8px 8px calc(16px + env(safe-area-inset-bottom))} section{padding:10px}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:8px} .kpi .v{font-size:19px}
+    .ztools button{padding:10px 12px;min-width:44px;font-size:14px} .ztools .small{display:none}
+    #elevWrap{max-height:62vh}
+    .stg{grid-template-columns:14px 1fr 150px 58px} .stg span{font-size:14px}
+    .stg input,#selSec textarea{font-size:16px;padding:9px} .stg button{padding:11px 0}
+    #selSec .selhead button{padding:10px 18px;font-size:18px}
+    input,select{font-size:16px}
+  }
+  .note{font-size:11px;color:var(--mut);margin-top:6px}
+  @media print{
+    header .savebox, .noprint{display:none!important}
+    html,body{background:#fff;color:#000}
+    section{border-color:#bbb;background:#fff;break-inside:avoid}
+    th{background:#fff;color:#333}
+    input,select{border:none;background:transparent;color:#000;padding:0}
+    .kpi{background:#fff}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <b>Cortina Atirantada – Controle de Execução dos Tirantes</b>
+    <input id="obraNome" placeholder="Obra / local (clique para preencher)">
+  </div>
+  <div class="hdrbtns noprint">
+    <button onclick="$('btnExport').click()" title="Baixar um arquivo com todos os lançamentos (para guardar ou passar para outro aparelho)">⤓ Backup</button>
+    <button onclick="$('btnImport').click()" title="Carregar um arquivo de backup">⤒ Restaurar</button>
+  </div>
+  <div class="savebox noprint">
+    <button id="btnSave" title="Salvar neste navegador (Ctrl+S)">💾 Salvo</button>
+    <span id="saveInfo"></span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>Resumo da execução</h2>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section id="desenhoSec">
+    <h2>Desenho – elevações da cortina (clique num tirante para editar)</h2>
+    <div class="ztools noprint">
+      <button data-ev="" class="on">Todas</button>
+      <button data-ev="0">Elevação 01</button>
+      <button data-ev="1">Elevação 02</button>
+      <button data-ev="2">Elevação 03</button>
+      <button data-ev="3">Elevação 04</button>
+      <button data-ev="4">Elevação 05</button>
+      <button data-ev="5">Elevação 06</button>
+      <span style="width:12px"></span>
+      <button id="zMenos" title="Diminuir">−</button>
+      <span id="zVal">100%</span>
+      <button id="zMais" title="Ampliar">+</button>
+      <button id="zFit" title="Ajustar o desenho à largura da tela">Ajustar à tela</button>
+      <button id="zFull" title="Ver o desenho em tela cheia">⛶ Tela cheia</button>
+      <span class="small" style="color:var(--mut)">Ctrl + roda do mouse = zoom · arraste o desenho para mover</span>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div id="elevWrap"><div id="elevs"></div></div>
+    <div class="note">Desenho esquemático feito a partir da prancha (Elevações 01 a 06). Os tirantes mudam de cor conforme a etapa lançada. Tirantes acrescentados com "+ Tirante" aparecem só na tabela e no mapa abaixo.</div>
+  </section>
+  <div id="dtip"></div>
+
+  <section id="selSec" class="noprint">
+    <h2>Tirante selecionado – lançar datas</h2>
+    <div class="selhead"><button onclick="passoTir(-1)" title="Anterior">‹</button><b id="selNome">—</b><button onclick="passoTir(1)" title="Próximo">›</button></div>
+    <div id="selInfo" style="text-align:center;margin-bottom:6px"></div>
+    <div id="selStages"></div>
+    <label style="display:block;color:var(--mut);font-size:11px;margin:8px 0 3px">Observações</label>
+    <textarea id="selObs" rows="2" style="width:100%" placeholder="Ex.: perda de calda, reperfuração..."></textarea>
+    <div class="row" style="margin-top:8px"><button onclick="$('desenhoSec').scrollIntoView({behavior:'smooth'})">↑ Voltar ao desenho</button><span style="flex:1"></span><button onclick="$('btnUndo').click()">↶ Desfazer</button></div>
+  </section>
+
+  <section>
+    <h2>Mapa dos tirantes (clique para editar)</h2>
+    <div id="mapa"></div>
+  </section>
+
+  <section class="noprint">
+    <h2>Lançamento em lote</h2>
+    <div class="row">
+      <label>Tirante inicial<input type="number" id="lIni" min="1" value="1" style="width:90px"></label>
+      <label>Tirante final<input type="number" id="lFim" min="1" value="1" style="width:90px"></label>
+      <label>Etapa<select id="lEtapa"></select></label>
+      <label>Data<input type="date" id="lData"></label>
+      <button class="primary" id="btnLote">Aplicar data</button>
+      <button class="danger" id="btnLimpar">🗑 Apagar data da etapa</button>
+      <button id="btnUndo">↶ Desfazer</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section>
+    <div class="row noprint" style="margin-bottom:10px">
+      <label>Filtrar tipo<select id="fTipo"><option value="">Todos</option></select></label>
+      <label>Filtrar situação<select id="fSit"><option value="">Todas</option></select></label>
+      <label>Buscar nº<input type="number" id="fNum" min="1" style="width:90px"></label>
+      <span style="flex:1"></span>
+      <button id="btnAdd">+ Tirante</button>
+      <button class="danger" id="btnDel">− Remover último</button>
+    </div>
+    <h2>Registro de execução</h2>
+    <div class="tablewrap"><table id="tab"><thead></thead><tbody></tbody></table></div>
+    <div class="note">As datas ficam em branco até você preencher. A situação de cada tirante é a última etapa com data. Aparece um alerta se uma etapa tiver data e a anterior não, ou se as datas estiverem fora de ordem.</div>
+  </section>
+
+  <section>
+    <h2>Características dos tirantes (conforme projeto)</h2>
+    <div class="tablewrap"><table id="tipos"><thead></thead><tbody></tbody></table></div>
+    <div class="note">⚠ Valores lidos da foto da prancha – confira no projeto e corrija aqui se necessário (os campos são editáveis). "Quant." é a do quadro do projeto; "Nesta cortina" conta os tirantes da lista.</div>
+  </section>
+
+  <section class="noprint">
+    <h2>Dados</h2>
+    <div class="row">
+      <button id="btnExport">⤓ Backup (arquivo)</button>
+      <button id="btnImport">⤒ Restaurar backup</button>
+      <button id="btnCsv">Exportar CSV (Excel)</button>
+      <button id="btnPrint">🖨 Imprimir / PDF</button>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    </div>
+    <div class="note">O botão <b>Salvar</b> guarda tudo neste navegador e recarrega ao abrir o arquivo. Os lançamentos também são salvos sozinhos. Use <b>Backup</b> para guardar uma cópia ou passar os dados do celular para o computador (e vice-versa) com <b>Restaurar</b>.</div>
+  </section>
+
+  <section>
+    <h2>Histórico de lançamentos</h2>
+    <ol id="log" reversed></ol>
+  </section>
+</main>
+
+<script>
+/* ================== CONFIGURAÇÃO ================== */
+const LS_KEY = 'cortina_tirantes_v1';
+
+// Etapas de execução (colunas de data da prancha)
+const ETAPAS = [
+  {k:'prefuro', l:'Pré-furo',                  curto:'Pré-furo'},
+  {k:'perf',    l:'Perfuração / Instalação',   curto:'Perfuração'},
+  {k:'inj1',    l:'Injeção primária',          curto:'Inj. 1ª'},
+  {k:'inj2',    l:'Injeção secundária',        curto:'Inj. 2ª'},
+  {k:'prot',    l:'Protensão',                 curto:'Protensão'},
+];
+// Situação = última etapa com data
+const SIT = [
+  {k:'nao',     l:'Não iniciado',            cor:'#5b6878'},
+  {k:'prefuro', l:'Pré-furo executado',      cor:'#9b59b6'},
+  {k:'perf',    l:'Perfurado / instalado',   cor:'#3498DB'},
+  {k:'inj1',    l:'Injeção primária',        cor:'#F1C40F'},
+  {k:'inj2',    l:'Injeção secundária',      cor:'#E67E22'},
+  {k:'prot',    l:'Protendido (concluído)',  cor:'#2ECC71'},
+];
+const SITMAP = Object.fromEntries(SIT.map(s=>[s.k,s]));
+
+// Características por tipo – lidas da prancha (CONFERIR)
+const TIPOS_PADRAO = {
+  T1:{cota:'752,45/753,45', total:'25,00', bulbo:'10,00', livre:'15,00', furo:'150', iv:'30°', ih:'0°',   cabos:'6 Ø 1/2"', esp:'2,50', pre:'54', adm:'60', qt:24},
+  T2:{cota:'752,45/753,45', total:'24,00', bulbo:'9,00',  livre:'15,00', furo:'150', iv:'15°', ih:'15°',  cabos:'6 Ø 1/2"', esp:'2,50', pre:'54', adm:'60', qt:8},
+  T3:{cota:'752,00',        total:'24,00', bulbo:'9,00',  livre:'15,00', furo:'150', iv:'30°', ih:'7,5°', cabos:'6 Ø 1/2"', esp:'1,60', pre:'54', adm:'60', qt:2},
+  T4:{cota:'753,35/753,00', total:'23,00', bulbo:'8,00',  livre:'15,00', furo:'150', iv:'35°', ih:'0°',   cabos:'4 Ø 1/2"', esp:'2,50', pre:'36', adm:'40', qt:10},
+};
+const COLS_TIPO = [
+  ['cota','Cota (m)'],['total','Compr. total (m)'],['bulbo','Compr. bulbo (m)'],['livre','Compr. livre (m)'],
+  ['furo','Ø furo (mm)'],['iv','Incl. vertical'],['ih','Incl. horizontal'],['cabos','Nº cabos'],
+  ['esp','Espaçamento (m)'],['pre','Pré-carga (tf)'],['adm','Carga admiss. (tf)'],['qt','Quant.']];
+
+/* Lista inicial conforme a prancha: 44 tirantes
+   1–8 = T2 (Elev. 01) · 9–21 = T1 (Elev. 02) · 22–32 = T1 e 33–34 = T3 (Elev. 04) · 35–39 = T4 (Elev. 05) · 40–44 = T4 (Elev. 06) */
+function listaPadrao(){
+  const tipos=[];
+  for (let i=1;i<=8;i++) tipos.push('T2');
+  for (let i=9;i<=32;i++) tipos.push('T1');
+  for (let i=33;i<=34;i++) tipos.push('T3');
+  for (let i=35;i<=44;i++) tipos.push('T4');
+  return tipos.map((t,i)=>novoTirante(i+1,t));
+}
+
+/* ================== DESENHO DAS ELEVAÇÕES ==================
+   Coordenadas medidas na foto da prancha (cada elevação foi ampliada com escala/deslocamento próprios
+   e é convertida para a mesma escala). Painel: [x0, x1, topo, base, lamela]. Tirante: n: [x, y]. */
+const ELEVS=[
+  { nome:'Elevação 01', sub:'T2 · 001 a 008', esc:3, off:[60,200],
+    caixa:[240,170,1010,780], terreno:[[282,566],[965,550]],
+    paineis:[[285,432,390,688,'LM 10'],[432,512,390,688,'LM 20'],[512,668,345,685,'LM 30'],[668,750,298,682,'LM 40'],[750,888,258,680,'LM 50'],[888,962,215,725,'LM 60']],
+    muros:[[262,382,284,778],[948,200,988,725]], eixos:[],
+    tirantes:{1:[388,428],2:[467,428],3:[546,428],4:[624,428],5:[701,425],6:[773,425],7:[843,422],8:[916,420]} },
+  { nome:'Elevação 02', sub:'T1 · 009 a 021', esc:2.5, off:[600,200],
+    caixa:[320,25,1475,615], terreno:[[350,433],[1442,405]],
+    paineis:[[358,410,140,582,'LM 60'],[410,540,175,566,'LM 70'],[540,600,205,535,'LM 80'],[600,735,222,533,'LM 90'],[735,800,222,530,'LM 100'],[800,935,222,527,'LM 110'],
+             [935,1000,235,523,'LM 120'],[1000,1135,232,520,'LM 130'],[1135,1205,228,518,'LM 140'],[1205,1300,225,515,'LM 150'],[1300,1365,222,512,'LM 160'],[1365,1436,218,508,'LM 170']],
+    muros:[[338,135,358,585],[1436,212,1450,510]], eixos:[[465,'8'],[708,'7'],[950,'6'],[1192,'5'],[1440,'4']],
+    tirantes:{9:[368,320],10:[433,318],11:[500,318],12:[567,316],13:[632,284],14:[698,284],15:[765,282],16:[832,282],17:[900,280],18:[967,272],19:[1035,270],20:[1103,268],21:[1170,266]} },
+  { nome:'Elevação 03', sub:'sem tirantes', esc:4, off:[1300,220],
+    caixa:[230,200,720,740], terreno:[[258,536],[690,516]],
+    paineis:[[275,365,252,712,'LM 170'],[365,572,246,705,'LM 180'],[572,688,236,700,'LM 190']],
+    muros:[[252,242,275,715]], eixos:[], tirantes:{} },
+  { nome:'Elevação 04', sub:'T1 · 022 a 032 · T3 · 033 e 034', esc:2.5, off:[1600,200], eixoY:150,
+    caixa:[40,135,1430,830], terreno:[[92,627],[1390,612]],
+    paineis:[[92,197,371,790,'LM 19E'],[197,404,369,789,'LM 20E'],[404,508,366,788,'LM 21E'],[508,712,364,786,'LM 22E'],[712,816,362,784,'LM 23E'],
+             [816,1027,360,782,'LM 24E'],[1027,1130,357,780,'LM 25E'],[1130,1228,356,779,'LM 26E'],[1228,1390,352,812,'LM 27E']],
+    muros:[[75,350,92,792],[1390,328,1410,812],[75,347,1228,371],[1228,328,1410,352]], eixos:[[70,'4'],[440,'3'],[810,'2'],[1195,'1']],
+    cotas:[[640,318,'755,00'],[1272,598,'748,30'],[582,768,'744,30'],[1272,800,'743,50']],
+    tirantes:{22:[145,412],23:[248,412],24:[350,411],25:[453,410],26:[555,408],27:[658,407],28:[760,406],29:[863,404],30:[973,403],31:[1078,400],32:[1184,398],33:[1272,437],34:[1342,436]} },
+  { nome:'Elevação 05', sub:'T4 · 035 a 039', esc:2.5, off:[2200,200],
+    caixa:[170,265,1540,880], terreno:[[313,628],[1340,468]],
+    paineis:[[313,415,370,825,'LM 27E'],[415,517,370,825,'LM 28E'],[517,618,370,825,'LM 29E'],[618,720,370,825,'LM 30E'],[720,925,370,825,'LM 31E'],
+             [925,1028,370,825,'LM 32E'],[1028,1232,370,825,'LM 33E'],[1232,1340,370,825,'LM 34E']],
+    muros:[[293,348,313,825],[293,348,1340,370]], eixos:[],
+    cotas:[[790,290,'755,00'],[928,318,'753,75'],[352,386,'752,70'],[232,578,'748,30'],[792,772,'743,50'],[1497,273,'752,07']],
+    tirantes:{35:[769,433],36:[874,432],37:[979,400],38:[1084,399],39:[1187,399]} },
+  { nome:'Elevação 06', sub:'T4 · 040 a 044', esc:2.5, off:[2800,200],
+    caixa:[100,255,1560,920], terreno:[[258,440],[1423,585]],
+    paineis:[[258,357,383,795,'LM 35Ea'],[357,454,383,794,'LM 35Eb'],[454,549,383,793,'LM 36E'],[549,743,383,792,'LM 37E'],[743,840,383,791,'LM 38E'],
+             [840,1034,383,790,'LM 39E'],[1034,1131,383,789,'LM 40E'],[1131,1326,383,788,'LM 41E'],[1326,1423,383,787,'LM 42E']],
+    muros:[[252,365,1425,383],[1423,358,1440,790],[1488,405,1540,965]], eixos:[],
+    cotas:[[150,268,'752,07'],[536,312,'753,00'],[690,318,'754,00'],[1037,298,'753,25'],[1257,318,'752,70'],[1380,533,'748,30'],[628,745,'743,00']],
+    tirantes:{40:[401,404],41:[499,404],42:[596,404],43:[693,404],44:[791,404]} },
+];
+function novoTirante(n,tipo){ return {n, tipo, local:'', obs:'', d:Object.fromEntries(ETAPAS.map(e=>[e.k,''])) }; }
+
+let dados = { obra:'', tirantes:listaPadrao(), tipos:JSON.parse(JSON.stringify(TIPOS_PADRAO)), log:[] };
+let undo=[], dirty=false, booting=true, destaque=null;
+
+/* ================== UTILIDADES ================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const br=iso=>iso?iso.split('-').reverse().join('/'):'';
+const agora=()=>new Date().toLocaleString('pt-BR');
+function setMsg(t,c){ $('msg').textContent=t; $('msg').className='msg '+(c||''); }
+function situacao(t){ let s='nao'; for (const e of ETAPAS) if (t.d[e.k]) s=e.k; return s; }
+function alertas(t){
+  const a=[]; let prevData='', prevNome='', faltou=null;
+  for (const e of ETAPAS){
+    const v=t.d[e.k];
+    if (!v){ if(!faltou) faltou=e.l; continue; }
+    if (faltou) { a.push(`${e.l} lançada sem ${faltou}`); faltou=null; }
+    if (prevData && v<prevData) a.push(`${e.l} antes de ${prevNome}`);
+    prevData=v; prevNome=e.l;
+  }
+  return a;
+}
+function snapshot(){ undo.push(JSON.stringify(dados)); if (undo.length>50) undo.shift(); }
+function addLog(t){ dados.log.push(`${agora()} — ${t}`); }
+
+/* ================== RENDER ================== */
+function renderKPIs(){
+  const T=dados.tirantes, n=T.length||1;
+  const semana=new Date(); semana.setDate(semana.getDate()-7); const lim=semana.toISOString().slice(0,10);
+  let html=`<div class="kpi"><div class="l">Total de tirantes</div><div class="v">${T.length}</div><div class="s">${Object.keys(dados.tipos).map(k=>`${k}: ${T.filter(t=>t.tipo===k).length}`).join(' · ')}</div></div>`;
+  for (const e of ETAPAS){
+    const feitos=T.filter(t=>t.d[e.k]).length, sem=T.filter(t=>t.d[e.k] && t.d[e.k]>=lim).length;
+    const cor=SITMAP[e.k].cor, p=feitos/n*100;
+    html+=`<div class="kpi"><div class="l">${e.l}</div><div class="v">${feitos}<span style="font-size:13px;color:var(--mut)"> / ${T.length}</span></div>
+      <div class="s">${p.toFixed(1).replace('.',',')}% · últimos 7 dias: ${sem}</div><div class="bar"><i style="width:${p}%;background:${cor}"></i></div></div>`;
+  }
+  const al=T.filter(t=>alertas(t).length).length;
+  html+=`<div class="kpi"><div class="l">Alertas de sequência</div><div class="v" style="color:${al?'#ff8a7d':'var(--ok)'}">${al}</div><div class="s">${al?'confira as datas destacadas':'nenhuma inconsistência'}</div></div>`;
+  $('kpis').innerHTML=html;
+}
+function renderMapa(){
+  $('legend').innerHTML=SIT.map(s=>`<span><i class="sw" style="background:${s.cor}"></i>${s.l}</span>`).join('')
+    +`<span><i class="sw" style="border:2px solid #ff5c5c"></i>Alerta de datas</span>`;
+  $('mapa').innerHTML=dados.tirantes.map((t,i)=>{
+    const s=SITMAP[situacao(t)], w=alertas(t).length;
+    return `<div class="chip${w?' warn':''}" data-i="${i}" style="background:${s.cor}" title="Tirante ${t.n} (${t.tipo}) – ${s.l}${t.local?' · '+esc(t.local):''}">${t.n}<small>${t.tipo}</small></div>`;
+  }).join('');
+}
+function renderTabela(){
+  $('tab').querySelector('thead').innerHTML=`<tr><th>Nº</th><th>Tipo</th><th>Local / Elevação</th>${ETAPAS.map(e=>`<th>${e.l}</th>`).join('')}<th>Situação</th><th>Observações</th></tr>`;
+  const fT=$('fTipo').value, fS=$('fSit').value, fN=+$('fNum').value;
+  const tipos=Object.keys(dados.tipos);
+  $('tab').querySelector('tbody').innerHTML=dados.tirantes.map((t,i)=>{
+    const sk=situacao(t), s=SITMAP[sk];
+    if (fT && t.tipo!==fT) return ''; if (fS && sk!==fS) return ''; if (fN && t.n!==fN) return '';
+    const al=alertas(t);
+    return `<tr data-i="${i}" id="row${i}" class="${destaque===i?'hl':''}">
+      <td class="n">${t.n}</td>
+      <td><select data-f="tipo">${tipos.map(k=>`<option${k===t.tipo?' selected':''}>${k}</option>`).join('')}</select></td>
+      <td><input type="text" data-f="local" value="${esc(t.local)}" placeholder="ex.: Elev. 02 / LM 30"></td>
+      ${ETAPAS.map(e=>`<td><input type="date" data-d="${e.k}" value="${t.d[e.k]}"></td>`).join('')}
+      <td><span class="st" style="background:${s.cor}">${s.l}</span>${al.map(a=>`<span class="alerta">⚠ ${esc(a)}</span>`).join('')}</td>
+      <td><input type="text" data-f="obs" value="${esc(t.obs)}"></td></tr>`;
+  }).join('') || `<tr><td colspan="10" style="color:var(--mut)">Nenhum tirante no filtro.</td></tr>`;
+}
+function renderTipos(){
+  $('tipos').querySelector('thead').innerHTML=`<tr><th>Tipo</th>${COLS_TIPO.map(c=>`<th>${c[1]}</th>`).join('')}<th>Nesta cortina</th></tr>`;
+  $('tipos').querySelector('tbody').innerHTML=Object.entries(dados.tipos).map(([k,v])=>{
+    const nalista=dados.tirantes.filter(t=>t.tipo===k).length;
+    return `<tr data-k="${k}"><td class="n">${k}</td>${COLS_TIPO.map(([c])=>`<td><input data-c="${c}" value="${esc(v[c])}"></td>`).join('')}
+      <td>${nalista}</td></tr>`;
+  }).join('');
+}
+function renderFiltros(){
+  const fT=$('fTipo').value, fS=$('fSit').value;
+  $('fTipo').innerHTML='<option value="">Todos</option>'+Object.keys(dados.tipos).map(k=>`<option${k===fT?' selected':''}>${k}</option>`).join('');
+  $('fSit').innerHTML='<option value="">Todas</option>'+SIT.map(s=>`<option value="${s.k}"${s.k===fS?' selected':''}>${s.l}</option>`).join('');
+}
+/* ---- Zoom do desenho ---- */
+const ESC_BASE = 2.4;                 // pixels por unidade da prancha em 100%
+let zoom = 1, elevSel = '';           // elevSel: '' = todas, ou índice da elevação
+try{ const z=JSON.parse(localStorage.getItem(LS_KEY+'_zoom')||'null'); if (z){ zoom=+z.zoom||1; elevSel=z.elev??''; } }catch(e){}
+const ZMIN=0.3, ZMAX=6;
+function guardaZoom(){ try{ localStorage.setItem(LS_KEY+'_zoom', JSON.stringify({zoom, elev:elevSel})); }catch(e){} }
+function larguraUnid(){ // largura (unidades da prancha) das elevações visíveis
+  return ELEVS.filter((E,i)=>elevSel===''||String(i)===String(elevSel)).reduce((a,E)=>a+(E.caixa[2]-E.caixa[0])/E.esc,0);
+}
+function setZoom(z, ancora){
+  const wrap=$('elevWrap'), old=zoom;
+  zoom=Math.min(ZMAX, Math.max(ZMIN, z));
+  // mantém o ponto sob o mouse (ou o centro) no mesmo lugar
+  const r=wrap.getBoundingClientRect();
+  const mx=ancora?ancora.x-r.left:wrap.clientWidth/2, my=ancora?ancora.y-r.top:wrap.clientHeight/2;
+  const cx=wrap.scrollLeft+mx, cy=wrap.scrollTop+my, k=zoom/old;
+  renderDesenho();
+  wrap.scrollLeft=cx*k-mx; wrap.scrollTop=cy*k-my;
+  guardaZoom();
+}
+function ajustar(){
+  const wrap=$('elevWrap'), n=elevSel===''?ELEVS.length:1;
+  const disp=wrap.clientWidth-16-n*20-(n-1)*10;           // descontando bordas e espaços
+  setZoom(disp/(larguraUnid()*ESC_BASE));
+  wrap.scrollLeft=0; wrap.scrollTop=0;
+}
+$('zMais').onclick=()=>setZoom(zoom*1.25);
+$('zMenos').onclick=()=>setZoom(zoom/1.25);
+$('zFit').onclick=ajustar;
+$('zFull').onclick=()=>{ const sec=$('desenhoSec');
+  if (document.fullscreenElement) document.exitFullscreen(); else sec.requestFullscreen?.().then(()=>setTimeout(ajustar,150)); };
+document.addEventListener('fullscreenchange',()=>{ $('zFull').textContent=document.fullscreenElement?'✕ Sair da tela cheia':'⛶ Tela cheia'; if(!document.fullscreenElement) setTimeout(ajustar,150); });
+document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{
+  elevSel=b.dataset.ev; document.querySelectorAll('[data-ev]').forEach(x=>x.classList.toggle('on',x===b)); ajustar();
+});
+$('elevWrap').addEventListener('wheel',e=>{
+  if (!(e.ctrlKey||e.metaKey)) return;              // sem Ctrl a roda rola normalmente
+  e.preventDefault(); setZoom(zoom*(e.deltaY<0?1.15:1/1.15), {x:e.clientX,y:e.clientY});
+},{passive:false});
+// arrastar para mover (mouse ou dedo)
+// 1 dedo/mouse = arrastar · 2 dedos = zoom (pinça) · toque no tirante = selecionar
+const ptrs=new Map(); let pan=null, pinch=null;
+const dist2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y), meio2=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+$('elevWrap').addEventListener('pointerdown',e=>{
+  if (e.pointerType==='mouse' && e.button!==0) return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if (ptrs.size===1){ const g=e.target.closest('.tir'); pan={x:e.clientX,y:e.clientY,sl:$('elevWrap').scrollLeft,st:$('elevWrap').scrollTop,moved:false,tir:g?+g.dataset.i:null}; }
+  else if (ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch={d:dist2(a,b)||1,z:zoom}; pan=null; }
+  try{ $('elevWrap').setPointerCapture(e.pointerId); }catch(_){}
+});
+$('elevWrap').addEventListener('pointermove',e=>{
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if (pinch && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; setZoom(pinch.z*dist2(a,b)/pinch.d, meio2(a,b)); return; }
+  if (!pan) return; const dx=e.clientX-pan.x, dy=e.clientY-pan.y;
+  if (Math.abs(dx)+Math.abs(dy)>(e.pointerType==='touch'?10:3)){ pan.moved=true; $('elevWrap').classList.add('drag'); }
+  if (pan.moved){ $('elevWrap').scrollLeft=pan.sl-dx; $('elevWrap').scrollTop=pan.st-dy; }
+});
+function soltouElev(e){
+  if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+  if (pan && !pan.moved && ptrs.size===0 && e.type==='pointerup' && pan.tir!=null) selecionarTirante(pan.tir);
+  if (ptrs.size<2) pinch=null;
+  if (ptrs.size===1){ const [q]=[...ptrs.values()]; pan={x:q.x,y:q.y,sl:$('elevWrap').scrollLeft,st:$('elevWrap').scrollTop,moved:true,tir:null}; }
+  else if (ptrs.size===0){ pan=null; $('elevWrap').classList.remove('drag'); }
+}
+$('elevWrap').addEventListener('pointerup',soltouElev); $('elevWrap').addEventListener('pointercancel',soltouElev);
+
+function renderDesenho(){
+  const ESC_PX = ESC_BASE*zoom;
+  $('zVal').textContent=Math.round(zoom*100)+'%';
+  const idxDe={}; dados.tirantes.forEach((t,i)=>idxDe[t.n]=i);
+  $('elevs').innerHTML=ELEVS.map((E,ei)=>{
+    if (elevSel!=='' && String(ei)!==String(elevSel)) return '';
+    const P=([x,y])=>[E.off[0]+x/E.esc, E.off[1]+y/E.esc];           // foto → escala comum
+    const [bx0,by0]=P([E.caixa[0],E.caixa[1]]), [bx1,by1]=P([E.caixa[2],E.caixa[3]]);
+    const W=bx1-bx0, H=by1-by0, f=v=>v.toFixed(2);
+    const g0=P(E.terreno[0]), g1=P(E.terreno[1]);
+    // mesma escala em todas as elevações: 1 unidade da prancha = ESC_PX pixels
+    let svg=`<svg viewBox="${f(bx0)} ${f(by0)} ${f(W)} ${f(H)}" width="${(W*ESC_PX).toFixed(0)}" height="${(H*ESC_PX).toFixed(0)}" xmlns="http://www.w3.org/2000/svg">`;
+    // solo (abaixo da linha do terreno)
+    svg+=`<polygon points="${f(bx0)},${f(g0[1])} ${f(g0[0])},${f(g0[1])} ${f(g1[0])},${f(g1[1])} ${f(bx1)},${f(g1[1])} ${f(bx1)},${f(by1)} ${f(bx0)},${f(by1)}" fill="#8a744466"/>`;
+    // painéis / lamelas
+    for (const [x0,x1,top,bot,lm] of E.paineis){
+      const [a,t]=P([x0,top]), [b,u]=P([x1,bot]);
+      svg+=`<rect x="${f(a)}" y="${f(t)}" width="${f(b-a)}" height="${f(u-t)}" fill="#26323f" fill-opacity=".75" stroke="#9aa7b6" stroke-width=".35"/>`;
+      svg+=`<text x="${f((a+b)/2)}" y="${f(u-3)}" font-size="4.2" fill="#cfd8e3" text-anchor="middle">${lm}</text>`;
+    }
+    svg+=`<line x1="${f(g0[0])}" y1="${f(g0[1])}" x2="${f(g1[0])}" y2="${f(g1[1])}" stroke="#c9a96b" stroke-width=".5" stroke-dasharray="1.5 1"/>`;
+    for (const [x0,y0,x1,y1] of E.muros){ const [a,b]=P([x0,y0]), [c,d]=P([x1,y1]); svg+=`<rect x="${f(a)}" y="${f(b)}" width="${f(c-a)}" height="${f(d-b)}" fill="#7d8894"/>`; }
+    for (const [x,y,txt] of (E.cotas||[])){ const [a,b]=P([x,y]); svg+=`<text x="${f(a)}" y="${f(b)}" font-size="3.8" fill="#f3d27a" text-anchor="middle">▼ ${txt}</text>`; }
+    for (const [x,lab] of E.eixos){ const [a,b]=P([x,E.eixoY||40]); svg+=`<circle cx="${f(a)}" cy="${f(b+5)}" r="5" fill="none" stroke="#8b9aab" stroke-width=".45"/><text x="${f(a)}" y="${f(b+6.7)}" font-size="5" fill="#cfd8e3" text-anchor="middle">${lab}</text>`; }
+    // tirantes
+    for (const [n,pt] of Object.entries(E.tirantes)){
+      const i=idxDe[n]; const [cx,cy]=P(pt);
+      if (i===undefined){ svg+=`<circle cx="${f(cx)}" cy="${f(cy)}" r="5.2" fill="none" stroke="#5b6878" stroke-width=".5" stroke-dasharray="1.2 1"/>`; continue; }
+      const t=dados.tirantes[i], s=SITMAP[situacao(t)], al=alertas(t).length, sel=destaque===i;
+      svg+=`<g class="tir" data-i="${i}">`
+        + (sel?`<circle cx="${f(cx)}" cy="${f(cy)}" r="8" fill="none" stroke="#f39c12" stroke-width="1.3"/>`:'')
+        + `<circle class="c" cx="${f(cx)}" cy="${f(cy)}" r="5.4" fill="${s.cor}" stroke="${al?'#ff5c5c':'#0f141a'}" stroke-width="${al?1.2:.55}"/>`
+        + `<text x="${f(cx)}" y="${f(cy+1.8)}" font-size="5" font-weight="700" fill="#0b1016" text-anchor="middle" pointer-events="none">${t.n}</text>`
+        + `<text x="${f(cx)}" y="${f(cy-7)}" font-size="3.6" fill="#cfd8e3" text-anchor="middle" pointer-events="none">${t.tipo}</text></g>`;
+    }
+    svg+='</svg>';
+    const nT=Object.keys(E.tirantes).length;
+    const feitos=Object.keys(E.tirantes).filter(n=>idxDe[n]!==undefined && situacao(dados.tirantes[idxDe[n]])==='prot').length;
+    return `<div class="elev"><h3>${E.nome} <span>${E.sub}${nT?` · protendidos ${feitos}/${nT}`:''}</span></h3>${svg}</div>`;
+  }).join('');
+}
+function selecionarTirante(i){
+  $('fTipo').value=''; $('fSit').value=''; $('fNum').value=''; destaque=i; renderTabela(); renderDesenho(); renderSel();
+  $('lIni').value=$('lFim').value=dados.tirantes[i].n;
+  // celular: vai para o painel com as datas · computador: vai para a linha da tabela
+  if (matchMedia('(max-width:900px)').matches){ $('selSec').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  const row=$('row'+i); if (row){ row.scrollIntoView({behavior:'smooth',block:'center'}); row.querySelector('input[type=date]')?.focus({preventScroll:true}); }
+}
+const hojeISO=()=>{ const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
+function renderSel(){
+  const i=destaque??0, t=dados.tirantes[i]; if(!t){ $('selNome').textContent='—'; return; }
+  const s=SITMAP[situacao(t)], al=alertas(t);
+  $('selNome').textContent=`Tirante ${String(t.n).padStart(3,'0')} · ${t.tipo}`;
+  $('selInfo').innerHTML=`<span class="st" style="background:${s.cor}">${s.l}</span>`+al.map(a=>`<span class="alerta">⚠ ${esc(a)}</span>`).join('');
+  $('selStages').innerHTML=ETAPAS.map(e=>`<div class="stg"><i style="background:${t.d[e.k]?SITMAP[e.k].cor:'#2a3542'}"></i><span>${e.l}</span><input type="date" data-k="${e.k}" value="${t.d[e.k]}"><button data-hoje="${e.k}">Hoje</button></div>`).join('');
+  $('selObs').value=t.obs||'';
+}
+function lancaSel(k,v){ const i=destaque??0, t=dados.tirantes[i]; snapshot(); t.d[k]=v;
+  addLog(`Tirante ${t.n} · ${ETAPAS.find(x=>x.k===k).l}: ${v?br(v):'data apagada'}`); renderTabela(); changed(); renderSel(); }
+$('selStages').addEventListener('change',e=>{ const k=e.target.dataset.k; if(k) lancaSel(k,e.target.value); });
+$('selStages').addEventListener('click',e=>{ const k=e.target.dataset.hoje; if(k) lancaSel(k,hojeISO()); });
+$('selObs').addEventListener('change',e=>{ const t=dados.tirantes[destaque??0]; if(!t) return; snapshot(); t.obs=e.target.value; renderTabela(); changed(); });
+function passoTir(k){ const n=dados.tirantes.length; if(!n) return; destaque=((destaque??0)+k+n)%n; renderTabela(); renderDesenho(); renderSel(); }
+// (seleção do tirante feita no pointerup acima)
+$('elevs').addEventListener('mousemove',e=>{
+  const g=e.target.closest('.tir'), tip=$('dtip');
+  if (!g){ tip.style.display='none'; return; }
+  const t=dados.tirantes[+g.dataset.i], s=SITMAP[situacao(t)], al=alertas(t);
+  tip.innerHTML=`<b>Tirante ${t.n}</b> · ${t.tipo}${t.local?' · '+esc(t.local):''}<br><span class="sw" style="background:${s.cor};vertical-align:-2px"></span> ${s.l}<br>`
+    + ETAPAS.map(x=>`${x.curto}: ${t.d[x.k]?br(t.d[x.k]):'—'}`).join('<br>') + al.map(a=>`<br><span style="color:#ff8a7d">⚠ ${esc(a)}</span>`).join('');
+  tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY+14)+'px'; tip.style.display='block';
+});
+$('elevs').addEventListener('mouseleave',()=>$('dtip').style.display='none');
+function renderLog(){ $('log').innerHTML=dados.log.slice(-60).reverse().map(t=>`<li>${esc(t)}</li>`).join('')||'<li>Sem lançamentos.</li>'; }
+function renderAll(){ $('obraNome').value=dados.obra||''; renderFiltros(); renderKPIs(); renderDesenho(); renderMapa(); renderTabela(); renderTipos(); renderLog(); renderSel(); }
+function changed(){ renderKPIs(); renderDesenho(); renderMapa(); renderTipos(); renderLog(); renderSel(); markDirty(); }
+
+/* ================== EDIÇÃO ================== */
+$('tab').addEventListener('change',e=>{
+  const tr=e.target.closest('tr[data-i]'); if(!tr) return;
+  const t=dados.tirantes[+tr.dataset.i]; snapshot();
+  if (e.target.dataset.d){ const k=e.target.dataset.d; t.d[k]=e.target.value;
+    addLog(`Tirante ${t.n} · ${ETAPAS.find(x=>x.k===k).l}: ${e.target.value?br(e.target.value):'data apagada'}`); }
+  else { t[e.target.dataset.f]=e.target.value; if (e.target.dataset.f==='tipo') addLog(`Tirante ${t.n} → tipo ${t.tipo}`); }
+  destaque=+tr.dataset.i; renderTabela(); changed();   // changed() redesenha as elevações
+});
+$('tipos').addEventListener('change',e=>{
+  const tr=e.target.closest('tr[data-k]'); if(!tr) return; snapshot();
+  dados.tipos[tr.dataset.k][e.target.dataset.c]=e.target.value; addLog(`Características ${tr.dataset.k}: ${e.target.dataset.c} = ${e.target.value}`); changed();
+});
+$('obraNome').addEventListener('change',e=>{ dados.obra=e.target.value; markDirty(); });
+$('mapa').addEventListener('click',e=>{ const c=e.target.closest('.chip'); if(c) selecionarTirante(+c.dataset.i); });
+['fTipo','fSit','fNum'].forEach(id=>$(id).addEventListener('input',renderTabela));
+
+$('lEtapa').innerHTML=ETAPAS.map(e=>`<option value="${e.k}">${e.l}</option>`).join('');
+$('lData').value=new Date().toISOString().slice(0,10);
+function faixa(){
+  let a=+$('lIni').value, b=+$('lFim').value; if (a>b) [a,b]=[b,a];
+  const idx=dados.tirantes.map((t,i)=>t.n>=a&&t.n<=b?i:-1).filter(i=>i>=0);
+  return {a,b,idx};
+}
+$('btnLote').onclick=()=>{
+  const {a,b,idx}=faixa(), k=$('lEtapa').value, d=$('lData').value;
+  if (!idx.length) return setMsg('Nenhum tirante nesse intervalo.','err');
+  if (!d) return setMsg('Informe a data.','err');
+  snapshot(); idx.forEach(i=>dados.tirantes[i].d[k]=d);
+  addLog(`Tirantes ${a}–${b} · ${ETAPAS.find(x=>x.k===k).l}: ${br(d)} (${idx.length})`);
+  setMsg(`${ETAPAS.find(x=>x.k===k).l} lançada em ${idx.length} tirante(s).`,'ok'); renderTabela(); changed();
+};
+$('btnLimpar').onclick=()=>{
+  const {a,b,idx}=faixa(), k=$('lEtapa').value, nome=ETAPAS.find(x=>x.k===k).l;
+  if (!idx.length) return setMsg('Nenhum tirante nesse intervalo.','err');
+  if (!confirm(`Apagar a data de "${nome}" dos tirantes ${a} a ${b}?`)) return;
+  snapshot(); idx.forEach(i=>dados.tirantes[i].d[k]='');
+  addLog(`APAGADO: tirantes ${a}–${b} · ${nome}`); setMsg(`Datas de ${nome} apagadas (${idx.length}).`,'ok'); renderTabela(); changed();
+};
+$('btnUndo').onclick=()=>{ if(!undo.length) return setMsg('Nada para desfazer.','err'); dados=JSON.parse(undo.pop()); renderAll(); markDirty(); setMsg('Último lançamento desfeito.','ok'); };
+$('btnAdd').onclick=()=>{ snapshot(); const n=(dados.tirantes.at(-1)?.n||0)+1; dados.tirantes.push(novoTirante(n,Object.keys(dados.tipos)[0])); addLog(`Tirante ${n} adicionado`); renderAll(); markDirty(); };
+$('btnDel').onclick=()=>{ const t=dados.tirantes.at(-1); if(!t) return; if(!confirm(`Remover o tirante ${t.n} e suas datas?`)) return; snapshot(); dados.tirantes.pop(); addLog(`Tirante ${t.n} removido`); renderAll(); markDirty(); };
+
+/* ================== SALVAR / EXPORTAR ================== */
+function updSaveUI(){ const b=$('btnSave'); b.classList.toggle('dirty',dirty); b.textContent=dirty?'💾 Salvar alterações':'💾 Salvo'; }
+let tAuto=null;
+function markDirty(){ if (booting) return; dirty=true; updSaveUI(); clearTimeout(tAuto); tAuto=setTimeout(()=>salvar(true),600); }   // salva sozinho (bom no celular)
+function salvar(auto){ auto=auto===true;
+  try{ const q=new Date(); localStorage.setItem(LS_KEY, JSON.stringify({...dados, salvoEm:q.toISOString()}));
+    dirty=false; updSaveUI(); $('saveInfo').textContent=auto?'Salvo automaticamente às '+q.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'Salvo em '+q.toLocaleString('pt-BR'); if(!auto) setMsg('Alterações salvas neste aparelho.','ok');
+  }catch(err){ setMsg('Não foi possível salvar no navegador ('+err.message+'). Use Exportar JSON.','err'); }
+}
+function validar(d){
+  if (!d || !Array.isArray(d.tirantes)) throw new Error('arquivo sem lista de tirantes');
+  d.tirantes=d.tirantes.map((t,i)=>({n:+t.n||i+1, tipo:t.tipo||'T1', local:t.local||'', obs:t.obs||'',
+    d:Object.fromEntries(ETAPAS.map(e=>[e.k, (t.d&&/^\d{4}-\d{2}-\d{2}$/.test(t.d[e.k]))?t.d[e.k]:'']))}));
+  d.tipos=d.tipos&&typeof d.tipos==='object'?d.tipos:JSON.parse(JSON.stringify(TIPOS_PADRAO));
+  d.log=Array.isArray(d.log)?d.log:[]; d.obra=d.obra||''; return d;
+}
+$('btnSave').onclick=salvar;
+window.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); salvar(); } });
+window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+function baixar(nome,txt,tipo){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:tipo})); a.download=nome; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+const hoje=()=>new Date().toISOString().slice(0,10);
+$('btnExport').onclick=()=>baixar(`backup_tirantes_${hoje()}.json`, JSON.stringify({...dados, exportadoEm:new Date().toISOString()},null,1),'application/json');
+$('btnImport').onclick=()=>$('fileIn').click();
+$('fileIn').onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{ const d=validar(JSON.parse(await f.text())); snapshot(); dados=d; addLog(`Importado: ${f.name}`); renderAll(); markDirty(); setMsg('Arquivo importado. Clique em Salvar para manter.','ok'); }
+  catch(err){ setMsg('Não foi possível importar: '+err.message,'err'); }
+  e.target.value='';
+};
+$('btnCsv').onclick=()=>{
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const linhas=[['Nº','Tipo','Local / Elevação',...ETAPAS.map(e=>e.l),'Situação','Alertas','Observações'].map(q).join(';')];
+  for (const t of dados.tirantes) linhas.push([t.n,t.tipo,t.local,...ETAPAS.map(e=>br(t.d[e.k])),SITMAP[situacao(t)].l,alertas(t).join(' | '),t.obs].map(q).join(';'));
+  baixar(`tirantes_${hoje()}.csv`,'﻿'+linhas.join('\n'),'text/csv');
+};
+$('btnPrint').onclick=()=>window.print();
+
+/* ================== INICIALIZAÇÃO ================== */
+let carregado=null;
+try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const d=JSON.parse(raw); dados=validar(d); carregado=d.salvoEm?new Date(d.salvoEm):new Date();
+  // Elevações 04, 05 e 06: acrescenta os tirantes 22–44 que ainda não existirem, sem mexer nos lançamentos já feitos.
+  // Tirantes 22–44 ainda vazios recebem o tipo correto da prancha (T1, T3 ou T4).
+  const tipoDe=n=>n<=32?'T1':n<=34?'T3':'T4', vazio=t=>!t.local && !t.obs && ETAPAS.every(e=>!t.d[e.k]);
+  const tem=new Set(dados.tirantes.map(t=>+t.n)), novos=[];
+  dados.tirantes.forEach(t=>{ if(t.n>=22&&t.n<=44&&vazio(t)) t.tipo=tipoDe(t.n); });
+  for (let n=22;n<=44;n++) if(!tem.has(n)){ dados.tirantes.push(novoTirante(n, tipoDe(n))); novos.push(n); }
+  for (const k of ['T3','T4']) if(!dados.tipos[k]) dados.tipos[k]=JSON.parse(JSON.stringify(TIPOS_PADRAO[k]));
+  if (novos.length){ dados.tirantes.sort((a,b)=>a.n-b.n);
+    addLog(`Elevações novas: incluídos os tirantes ${novos.map(n=>String(n).padStart(3,'0')).join(', ')}`); setTimeout(()=>{ dirty=true; updSaveUI(); salvar(true); },0); }
+} }
+catch(err){ console.warn('Falha ao carregar salvamento', err); }
+renderAll();
+$('saveInfo').textContent = carregado ? 'Carregado do salvamento de '+carregado.toLocaleString('pt-BR') : 'Nenhum salvamento ainda';
+booting=false; updSaveUI();
+document.querySelectorAll('[data-ev]').forEach(x=>x.classList.toggle('on', x.dataset.ev===String(elevSel)));
+if (destaque==null) destaque=0; renderDesenho(); renderSel();
+// guarda os dados de forma persistente e funciona sem internet quando publicado (GitHub Pages + sw.js)
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(_){}
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
